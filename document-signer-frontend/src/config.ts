@@ -1,0 +1,84 @@
+// Archivo: src/config.ts
+
+export const DOCUMENT_REGISTRY_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+
+// ABI (Application Binary Interface) del DocumentRegistry.sol
+export const DOCUMENT_REGISTRY_ABI = [
+    {
+        "type": "function",
+        "name": "getDocumentInfo",
+        "inputs": [
+            {
+                "name": "_documentHash",
+                "type": "bytes32",
+                "internalType": "bytes32"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "signer",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "signature",
+                "type": "bytes",
+                "internalType": "bytes"
+            },
+            {
+                "name": "timestamp",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
+        "name": "storeDocumentHash",
+        "inputs": [
+            {
+                "name": "_documentHash",
+                "type": "bytes32",
+                "internalType": "bytes32"
+            },
+            {
+                "name": "_timestamp",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "_signature",
+                "type": "bytes",
+                "internalType": "bytes"
+            }
+        ],
+        "outputs": [],
+        "stateMutability": "nonpayable"
+    },
+    {
+        "type": "event",
+        "name": "DocumentRegistered",
+        "inputs": [
+            {
+                "name": "documentHash",
+                "type": "bytes32",
+                "indexed": true,
+                "internalType": "bytes32"
+            },
+            {
+                "name": "signer",
+                "type": "address",
+                "indexed": true,
+                "internalType": "address"
+            },
+            {
+                "name": "timestamp",
+                "type": "uint256",
+                "indexed": false,
+                "internalType": "uint256"
+            }
+        ],
+        "anonymous": false
+    }
+];
