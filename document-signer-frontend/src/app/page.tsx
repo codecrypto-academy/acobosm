@@ -4,10 +4,11 @@
 import { useAnvilWallets } from '@/hooks/useAnvilWallets';
 import { Wallet, ethers } from 'ethers';
 import { useEffect, useState, useCallback } from 'react';
+import { sha256 } from 'js-sha256';
 
 // Constantes
 const DOCUMENT_HASH_BYTES32 = '0x1c3a61250328905b191a3c79a20464f1d24c0d024467c9c0cc959828469d784a'; // Hash de prueba
-const INITIAL_HASH_DISPLAY = '0x...'; // Placeholder inicial
+const INITIAL_HASH_DISPLAY = '0x0000... (Cargue un Archivo)'; // Placeholder inicial
 
 export default function HomePage() {
   const {
@@ -19,12 +20,13 @@ export default function HomePage() {
     error
   } = useAnvilWallets();
 
-  // Nuevo estado para la interfaz
   const [documentHash, setDocumentHash] = useState<string>(INITIAL_HASH_DISPLAY);
   const [isProcessing, setIsProcessing] = useState(false);
   const [logMessage, setLogMessage] = useState<string | null>(null);
   const [queryResult, setQueryResult] = useState<any>(null); // Guardará la respuesta de la blockchain
   const [queryLogMessage, setQueryLogMessage] = useState<string | null>(null);
+  //const [hashToRegister, setHashToRegister] = useState<string>(INITIAL_HASH_DISPLAY);    // ******* PARA ELIMINAR *******
+  const [fileName, setFileName] = useState<string>(''); // Almacena nombre de archivo a ser subido
 
   // Muestra la dirección de la wallet seleccionada en la consola
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function HomePage() {
     }
   }, [selectedWallet]);
 
+  // Función para convertir TimeStamp en Human readeable timestamp
   const formatTimestamp = (timestamp: string | number) => {
     const tsNumber = Number(timestamp);
     const date = new Date(tsNumber * 1000);
@@ -45,6 +48,45 @@ export default function HomePage() {
       minute: '2-digit',
       second: '2-digit',
     });
+  };
+
+  // Función para lleer el archivo y calcular el hash
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      setFileName(file.name); // Guardamos el nombre del archivo
+
+      const reader = new FileReader();
+
+      // Esta función se ejecuta cuando el archivo se ha cargado en memoria
+      reader.onload = (e) => {
+        const buffer = e.target?.result as ArrayBuffer;
+        if (buffer) {
+          try {
+            // 1. Calculamos el hash SHA-256 del buffer binario
+            //const hashArray = sha256.array(buffer);
+
+            // 2. Convertimos el hash binario a formato hexadecimal (string)
+            // Usamos sha256.arrayToHex para garantizar el formato '0x...'
+            const hashHex = '0x' + sha256.hex(buffer);
+
+            // 3. Actualizamos el estado de la DApp
+            setDocumentHash(hashHex);
+            //setHashToConsult(hashHex);
+
+            alert(`✅ Hash calculado para ${file.name}: ${hashHex.slice(0, 10)}...`);
+          } catch (error) {
+            console.error("Error al calcular el hash:", error);
+            alert("❌ Error: No se pudo calcular el hash del archivo.... :( ");
+          }
+
+        }
+      };
+
+      // Iniciamos la lectura del archivo como ArrayBuffer (datos binarios)
+      reader.readAsArrayBuffer(file);
+    }
   };
 
   /**
@@ -211,7 +253,48 @@ export default function HomePage() {
           2. Registrar Documento en Blockchain
         </h2>
 
+        {/* Campo de Carga de Archivo (NUEVA FUNCIONALIDAD) */}
+        <div className="mb-4 p-4 border rounded-lg bg-white shadow-sm">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Seleccionar y Cargar Archivo 📤
+          </label>
+          <input
+            type="file"
+            onChange={handleFileChange} // Llama a la nueva función
+            className="block w-full text-sm text-gray-900 
+                       file:mr-4 file:py-2 file:px-4
+                       file:rounded-full file:border-0
+                       file:text-sm file:font-semibold
+                       file:bg-blue-100 file:text-blue-700
+                       hover:file:bg-blue-200"
+          />
+          {/* Mostrar el nombre del archivo cargado (NUEVO ESTADO) */}
+          {fileName && (
+            <p className="mt-2 text-sm text-gray-600">
+              Archivo cargado: <span className="font-bold text-blue-800">{fileName}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Hash que se registrará (AHORA USA documentHash, que será calculado) */}
         <p className="text-sm font-mono p-2 bg-white rounded-md mb-4 break-words">
+          **Hash a Registrar:** <span className='text-red-600 font-bold'>{documentHash}</span>
+        </p>
+
+        {/* Botón de Registro (MANTENEMOS SU BOTÓN) */}
+        <button
+          onClick={handleSignAndStore} // Usamos su función de firma
+          disabled={!selectedWallet || isProcessing || documentHash === INITIAL_HASH_DISPLAY} // Usamos documentHash
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50"
+        >
+          {isProcessing ? 'Firmando y Registrando...' : 'Firmar y Registrar ✍️'}
+        </button>
+
+        {/* ... Mensajes de éxito y error aquí ... */}
+
+      </div>
+
+      {/*<p className="text-sm font-mono p-2 bg-white rounded-md mb-4 break-words">
           **Hash del Documento:** {documentHash}
         </p>
 
@@ -231,18 +314,17 @@ export default function HomePage() {
           >
             {isProcessing ? 'Firmando y Registrando...' : 'Firmar y Registrar ✍️'}
           </button>
-        </div>
+        </div>*/}
 
-        {/* LOG DE MENSAJES */}
-        {logMessage && (
-          <p className={`p-2 mt-2 rounded-md font-medium text-sm break-words 
+      {/* LOG DE MENSAJES */}
+      {logMessage && (
+        <p className={`p-2 mt-2 rounded-md font-medium text-sm break-words 
             ${logMessage.startsWith('❌') ? 'bg-red-200 text-red-800' :
-              logMessage.startsWith('🎉') ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}
-          >
-            {logMessage}
-          </p>
-        )}
-      </div>
+            logMessage.startsWith('🎉') ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}
+        >
+          {logMessage}
+        </p>
+      )}
 
       {/* ------------------------------------------------------------------- */}
       {/* SECCIÓN DE CONSULTA DE DOCUMENTO (FASE 4) */}
@@ -306,6 +388,6 @@ export default function HomePage() {
 
       </div> {/* CIERRE DE LA SECCIÓN DE CONSULTA */}
 
-    </main>
+    </main >
   );
 }
