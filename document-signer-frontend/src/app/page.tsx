@@ -2,7 +2,7 @@
 'use client';
 
 import { useAnvilWallets } from '@/hooks/useAnvilWallets';
-import { Wallet, ethers } from 'ethers';
+import { Wallet, ethers, zeroPadValue } from 'ethers';
 import { useEffect, useState, useCallback } from 'react';
 import { sha256 } from 'js-sha256';
 
@@ -25,7 +25,7 @@ export default function HomePage() {
   const [logMessage, setLogMessage] = useState<string | null>(null);
   const [queryResult, setQueryResult] = useState<any>(null); // Guardará la respuesta de la blockchain
   const [queryLogMessage, setQueryLogMessage] = useState<string | null>(null);
-  //const [hashToRegister, setHashToRegister] = useState<string>(INITIAL_HASH_DISPLAY);    // ******* PARA ELIMINAR *******
+  const [hashToConsult, setHashToConsult] = useState<string>(INITIAL_HASH_DISPLAY);
   const [fileName, setFileName] = useState<string>(''); // Almacena nombre de archivo a ser subido
 
   // Muestra la dirección de la wallet seleccionada en la consola
@@ -112,6 +112,9 @@ export default function HomePage() {
     setLogMessage('✍️ Iniciando proceso de firma y almacenamiento...');
 
     try {
+      // ** NUEVA LÍNEA: Formateo a 32 bytes para la Blockchain **
+      const hashBytes32 = zeroPadValue(documentHash, 32);
+
       // 1. Firma el Hash
       const signer = selectedWallet.connect(documentRegistryContract.runner.provider!);
       const messageToSign = documentHash; // El hash es el mensaje
@@ -126,7 +129,7 @@ export default function HomePage() {
       setLogMessage('⛓️ Enviando transacción a storeDocumentHash...');
 
       const tx = await documentRegistryContract.connect(signer).storeDocumentHash(
-        documentHash,
+        hashBytes32,
         timestamp,
         signature
       );
@@ -137,6 +140,10 @@ export default function HomePage() {
       const receipt = await tx.wait();
 
       setLogMessage(`🎉 Documento registrado con éxito en el bloque ${receipt.blockNumber} con ⛽ ${receipt.gasUsed.toString()} gas.`);
+
+      // ** LÍNEA DE AUTOMATIZACIÓN (VERIFICAR AQUÍ) **
+      setHashToConsult(documentHash);
+
     } catch (err: any) {
       console.error("Error en la firma o transacción:", err);
       setLogMessage(`❌ Error: ${err.reason || err.message || "Fallo desconocido"}`);
@@ -171,10 +178,14 @@ export default function HomePage() {
       // Creamos la instancia CONECTADA. Esto fuerza el re-enlazamiento del ABI.
       const contractForQuery = documentRegistryContract.connect(connectedRunner);
 
-      const hashToQuery = DOCUMENT_HASH_BYTES32;
+      //const hashToQuery = DOCUMENT_HASH_BYTES32;  // ******** ELIMINAR *******
+      const hashToQuery = hashToConsult;
+
+      // Formateamos el hash a bytes32, ¡es crucial para la consulta!
+      const hashBytes32Consult = zeroPadValue(hashToQuery, 32);
 
       // 2. LECTURA de la Blockchain (debería funcionar con la instancia conectada)
-      const result = await contractForQuery.getDocumentInfo(hashToQuery);
+      const result = await contractForQuery.getDocumentInfo(hashBytes32Consult);
 
       if (result && result[0] !== ethers.ZeroAddress) {
         // El resultado es un array: [signer, timestamp, signature]
@@ -194,7 +205,7 @@ export default function HomePage() {
       // Usamos err.message porque es el que mejor se muestra en tu consola
       setQueryLogMessage(`❌ Error en la consulta: ${err.message || "Fallo desconocido"}`);
     }
-  }, [documentRegistryContract, selectedWallet]); // Mantenemos ambas dependencias
+  }, [documentRegistryContract, selectedWallet, hashToConsult]); // Mantenemos ambas dependencias
 
   // Renderiza el botón de selección de wallet
   const renderWalletSelector = () => (
@@ -294,28 +305,6 @@ export default function HomePage() {
 
       </div>
 
-      {/*<p className="text-sm font-mono p-2 bg-white rounded-md mb-4 break-words">
-          **Hash del Documento:** {documentHash}
-        </p>
-
-        <div className="flex space-x-4 mb-4">
-          <button
-            onClick={generateDocumentHash}
-            disabled={isProcessing}
-            className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50"
-          >
-            {isProcessing ? 'Procesando...' : 'Generar Hash (Simulado)'}
-          </button>
-
-          <button
-            onClick={handleSignAndStore}
-            disabled={!selectedWallet || isProcessing || documentHash === INITIAL_HASH_DISPLAY}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50"
-          >
-            {isProcessing ? 'Firmando y Registrando...' : 'Firmar y Registrar ✍️'}
-          </button>
-        </div>*/}
-
       {/* LOG DE MENSAJES */}
       {logMessage && (
         <p className={`p-2 mt-2 rounded-md font-medium text-sm break-words 
@@ -339,8 +328,76 @@ export default function HomePage() {
           <label htmlFor="hashQuery" className="block text-sm font-medium text-gray-700 mb-1">
             Hash a Consultar:
           </label>
+          {/* REEMPLAZAMOS EL PÁRRAFO FIJO POR EL INPUT CONTROLADO */}
+          <input
+            type="text"
+            id="hashQuery"
+            className="w-full p-2 border rounded-md font-mono text-sm break-words border-gray-300"
+            placeholder="0x..."
+            // ** VINCULACIÓN AL ESTADO hashToConsult **
+            value={hashToConsult}
+            onChange={(e) => setHashToConsult(e.target.value)}
+          />
+        </div>
+
+        <button
+          onClick={handleCheckRegistry} // ¡Ya conectado!
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50"
+          disabled={hashToConsult === INITIAL_HASH_DISPLAY} // Deshabilitar si no hay hash válido
+        >
+          Verificar Registro
+        </button>
+
+        {/* ... (el resto del código de logs y queryResult permanece sin cambios) ... */}
+
+        {queryLogMessage && (
+          <p className={`p-2 mt-2 rounded-md font-medium text-sm break-words 
+    ${queryLogMessage.startsWith('❌') ? 'bg-red-200 text-red-800' :
+              queryLogMessage.startsWith('✅') ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}
+          >
+            {queryLogMessage}
+          </p>
+        )}
+
+        {queryResult && (
+          <div className="mt-4 p-3 bg-white border border-green-400 rounded-md">
+            <p className="font-bold text-green-700 mb-2">✅ Documento Encontrado:</p>
+            <p className="text-sm break-words">
+              **Firmado por:** <span className="font-mono text-gray-800">{queryResult.signer}</span>
+            </p>
+            <p className="text-sm break-words">
+              **Timestamp:** <span className="font-mono text-gray-800">{queryResult.timestamp.toString()}</span>
+            </p>
+            <p className="text-sm break-words mt-1">
+              **Fecha y Hora Timestamp:** <span className="font-mono text-blue-700 font-bold">
+                {formatTimestamp(queryResult.timestamp.toString())}</span>
+            </p>
+            <p className="text-sm break-words">
+              **Firma (parcial):** <span className="font-mono text-gray-800">{queryResult.signature.toString().slice(0, 30)}...</span>
+            </p>
+            <p className="text-xs mt-2 text-gray-500">
+              *(El Timestamp es la marca de tiempo de la Blockchain, no la fecha de hoy)*
+            </p>
+          </div>
+        )}
+
+      </div> {/* CIERRE DE LA SECCIÓN DE CONSULTA */}
+
+      {/* ------------------------------------------------------------------- */}
+      {/* SECCIÓN DE CONSULTA DE DOCUMENTO (FASE 4) */}
+      {/* ------------------------------------------------------------------- */}
+      {/*<div className="mt-6 p-4 bg-gray-100 rounded-lg border-gray-300 border">
+        <h2 className="text-xl font-semibold mb-3 text-gray-700">
+          3. Consultar Registro de Documento 🔎
+        </h2>
+
+        {/* Campo de entrada para el Hash a consultar */}
+      {/*<div className="mb-4">
+          <label htmlFor="hashQuery" className="block text-sm font-medium text-gray-700 mb-1">
+            Hash a Consultar:
+          </label>
           {/* Aquí usaremos el hash de prueba fijo por ahora */}
-          <p className="font-mono text-sm p-2 bg-white rounded-md border border-gray-300 break-words">
+      {/*<p className="font-mono text-sm p-2 bg-white rounded-md border border-gray-300 break-words">
             {DOCUMENT_HASH_BYTES32}
           </p>
         </div>
@@ -353,7 +410,7 @@ export default function HomePage() {
         </button>
 
         {/* NUEVO LOG DE CONSULTA */}
-        {queryLogMessage && (
+      {/*{queryLogMessage && (
           <p className={`p-2 mt-2 rounded-md font-medium text-sm break-words 
           ${queryLogMessage.startsWith('❌') ? 'bg-red-200 text-red-800' :
               queryLogMessage.startsWith('✅') ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}
@@ -363,7 +420,7 @@ export default function HomePage() {
         )}
 
         {/* Aquí se mostrarán los resultados */}
-        {queryResult && (
+      {/*{queryResult && (
           <div className="mt-4 p-3 bg-white border border-green-400 rounded-md">
             <p className="font-bold text-green-700 mb-2">✅ Documento Encontrado:</p>
             <p className="text-sm break-words">
@@ -374,7 +431,7 @@ export default function HomePage() {
             </p>
             <p className="text-sm break-words mt-1">
               {/* 2. Muestra el valor FORMATEADO (la fecha legible) */}
-              **Fecha y Hora Timestamp:** <span className="font-mono text-blue-700 font-bold">
+      {/***Fecha y Hora Timestamp:** <span className="font-mono text-blue-700 font-bold">
                 {formatTimestamp(queryResult.timestamp.toString())}</span>
             </p>
             <p className="text-sm break-words">
