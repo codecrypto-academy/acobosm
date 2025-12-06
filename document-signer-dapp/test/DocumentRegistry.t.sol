@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {DocumentRegistry} from "../src/DocumentRegistry.sol";
 
 contract DocumentRegistryTest is Test {
@@ -38,17 +38,8 @@ contract DocumentRegistryTest is Test {
         // Usamos vm.startPrank para simular la llamada desde la dirección del firmante (signer1)
         vm.startPrank(signer1);
 
-        // Verificación de eventos (muy importante en dApps)  //*******NO ME QUEDA CLARO LA RELACION ENTRE EL EVENTO Y ESTE EXPECTEMIT*******
+        // Verificación de eventos (muy importante en dApps)  
         // Le dice a Forge: "Espera encontrar este evento exactamente antes de la siguiente transacción."
-        /*
-        vm.expectEmit(
-            bool checkTopic1, // ¿Comprobar el primer argumento indexado?
-            bool checkTopic2, // ¿Comprobar el segundo argumento indexado?
-            bool checkTopic3, // ¿Comprobar el tercer argumento indexado?
-            bool checkData,   // ¿Comprobar los argumentos NO indexados?
-            address emitter   // Dirección del contrato que emite
-        );
-        */
         vm.expectEmit(true, true, false, true, address(registry));
 
         emit DocumentRegistered(documentHash1, signer1, currentTimestamp);   // ******* SE MEJORA EL MANEJO DE TIMESTAMP *******
@@ -155,5 +146,18 @@ contract DocumentRegistryTest is Test {
         bytes32[] memory emptyHashes = registry.getDocumentsBySigner(address(0x999));
         //bytes32[] memory emptyHashes = registry.signerDocuments(address(0x999));   // ******* CUANDO SE USABA EL GETTER AUTOMATICO *******
         assertEq(emptyHashes.length, 0, "Una wallet sin registros debe retornar un array vacio");
+    }
+
+    // TEST 5: Rechazar documentos inexistentes / Obtener valores por defecto.
+    function testDocumentNotExists() public view {
+        bytes32 unknownHash = keccak256(abi.encodePacked("hash-inexistente"));
+
+        // Obtenemos la información de un hash que NO se ha registrado.
+        (address signer, bytes memory signature, uint256 timestamp) = registry.getDocumentInfo(unknownHash);
+
+        // Assertions: Para un documento inexistente, el 'signer' (address) debe ser cero.
+        assertEq(signer, address(0), "El firmante de un hash inexistente debe ser address(0)");
+        assertEq(timestamp, 0, "El timestamp de un hash inexistente debe ser cero");
+        assertEq(signature.length, 0, "La firma de un hash inexistente debe ser un array vacio");
     }
 }
