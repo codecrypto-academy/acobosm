@@ -51,6 +51,12 @@ export default function HomePage() {
   // Estado de log para la sección de consulta avanzada
   const [searchLogMessage, setSearchLogMessage] = useState<string>('');
 
+  // Define el tipo para las pestañas
+  type ActiveTab = 'Wallet' | 'Register' | 'Check' | 'Advanced';
+
+  // Nuevo estado para controlar qué pestaña está activa
+  const [activeTab, setActiveTab] = useState<ActiveTab>('Wallet');
+
   // Muestra la dirección de la wallet seleccionada en la consola
   useEffect(() => {
     if (selectedWallet) {
@@ -400,244 +406,464 @@ export default function HomePage() {
     </div>
   );
 
+  // Función auxiliar para obtener las clases CSS de las pestañas
+  const getTabClasses = (tabName: ActiveTab) => {
+    // Definimos el estilo base
+    //const baseClasses = "p-3 text-left font-bold transition duration-300 border-l-4";  // ******* LINEA A SER ELIMINADA *******
+    //const baseClasses = "p-3 text-left font-bold transition duration-300 text-white mx-1 my-1 rounded-md shadow-md";  // ******* LINEA A SER ELIMINADA *******
+    //const baseClasses = "p-3 text-left font-bold transition duration-300 text-white rounded-md shadow-md min-h-20";  // ******* LINEA A SER ELIMINADA *******
+    //const baseClasses = "p-3 text-left font-bold transition duration-300 w-full block h-20";  // ******* LINEA A SER ELIMINADA *******
+    //const baseClasses = "p-3 text-left font-bold transition duration-300 w-full block";  // ******* LINEA A SER ELIMINADA *******
+    //const baseClasses = "px-10 text-left font-bold transition duration-300 flex items-center w-full";  // ******* LINEA A SER ELIMINADA *******
+    const baseClasses = "text-sm text-left font-bold transition duration-300 w-full flex items-center";
+
+    // Definimos los colores por defecto (inactivo)
+    //const inactiveClasses = "bg-gray-100 text-gray-600 hover:bg-gray-200 border-transparent";  // ******* CONSULTAR SI ES NECESARIO ELIMINAR ESTA LINEA *******
+
+    // Colores base para cada pestaña (los colores de fondo que usted quiere ver)
+    const baseColors: Record<ActiveTab, string> = {
+      'Wallet': "bg-blue-700 hover:bg-blue-300",       // Azul oscuro ???????
+      'Register': "bg-orange-600 hover:bg-orange-700", // Naranja vibrante
+      'Check': "bg-green-600 hover:bg-green-700",      // Verde sólido
+      'Advanced': "bg-purple-600 hover:bg-purple-700", // Morado
+    };
+
+    // Colores para cada pestaña activa, según su diagrama conceptual
+    const activeColors: Record<ActiveTab, string> = {  // ******* CONSULTAR SI ESTE BLOQUE ANTIGUO DE COLORES DEBA SER ELIMINADO *******
+      'Wallet': "bg-blue-100 text-blue-800 border-blue-600",
+      'Register': "bg-orange-100 text-orange-800 border-orange-600",
+      'Check': "bg-green-100 text-green-800 border-green-600",
+      'Advanced': "bg-purple-100 text-purple-800 border-purple-600",
+    };
+
+    //if (activeTab === tabName) {                                      // ******* BLOQUE A SER ELIMINADO *******
+    //return `${baseClasses} ${activeColors[tabName]}`;
+    //} else {
+    //return `${baseClasses} ${inactiveClasses}`;
+    //}
+
+    //if (activeTab === tabName) {                                        // ******* BLOQUE A SER ELIMINADO *******
+    // Pestaña Activa: Texto oscuro, fondo gris claro (para fusionarse con el fondo del contenido)
+    //return `${baseClasses} bg-gray-200 text-black shadow-none rounded-none mx-0 my-0`;
+    //} else {
+    // Pestaña Inactiva: Color sólido, texto blanco
+    //return `${baseClasses} ${baseColors[tabName]} text-white`;
+    //}
+
+    if (activeTab === tabName) {
+      // Pestaña Activa: No devuelve fondo, porque se aplica con 'style={...}' en el JSX.
+      //return `${baseClasses} text-black shadow-none rounded-none`;  // *******LINEA A SER ELIMINADA *******
+      return `${baseClasses} text-black`;
+    } else {
+      // Pestaña Inactiva: Aplica el color base sólido.
+      const inactiveTextColor = tabName === 'Wallet' ? 'text-black' : 'text-white';
+      //return `${baseClasses} ${baseColors[tabName]} text-white`;  // *******LINEA A SER ELIMINADA *******
+      return `${baseClasses} ${baseColors[tabName]} ${inactiveTextColor}`;
+    }
+  };
+
+  // Función auxiliar para obtener el color del fondo del contenido
+  const getTabContentColor = (tabName: ActiveTab) => {
+    // Colores de fondo más profundos para el contenedor de contenido (**** Work Area ****)
+    const colors: Record<ActiveTab, string> = {
+      'Wallet': "#93C5FD", // dark blue
+      'Register': "#fdbd6fff", // dark orange
+      'Check': "#81fda2ff", // dark green
+      'Advanced': "#bc81fbff", // dark purple
+    };
+    return colors[tabName];
+  };
+
   return (
-    <main className="w-full max-w-2xl bg-white p-8 rounded-xl shadow-2xl border border-gray-300">
-      <h1 className="text-4xl font-extrabold text-gray-800 mb-6 text-center">
-        ETH Document Signer ✍️
-      </h1>
-      <hr className="mb-6" />
+    <main className="min-h-screen bg-gray-50 p-4 sm:p-8">
 
-      {/* SECCIÓN PARA ESCOGER WALLET Y CONECTAR */}
-      <div className="p-4 bg-gray-50 rounded-lg mb-6">
-        <h2 className="text-xl font-semibold mb-3 text-gray-700">
-          1. Conexión y Selección de Wallet
-        </h2>
+      {/* Contenedor principal de la DApp */}
+      <div className="bg-white shadow-xl rounded-xl max-w-6xl mx-auto p-0 border border-gray-200">
 
-        {/* Mensajes de Estado de Conexión */}
-        {error && <p className="text-red-600 font-medium mb-2">🔴 ERROR: {error}</p>}
-
-        {selectedWallet ? (
-          <p className="text-green-600 font-medium break-words">
-            ✅ Wallet Seleccionada: **{selectedWallet.address}**
-          </p>
-        ) : isConnected ? (
-          <p className="text-yellow-600 font-medium">
-            🟡 Conectado a Anvil. Por favor, selecciona una wallet.
-          </p>
-        ) : (
-          <p className="text-red-500 font-medium">
-            ⚠️ Desconectado. ¿Está Anvil corriendo?
-          </p>
-        )}
-
-        {isConnected && wallets.length > 0 && renderWalletSelector()}
-      </div>
-
-      {/* SECCIÓN DE REGISTRO DE DOCUMENTO */}
-      <div className="p-4 bg-blue-50 rounded-lg border-blue-200 border">
-        <h2 className="text-xl font-semibold mb-3 text-blue-700">
-          2. Registrar Documento en Blockchain
-        </h2>
-
-        {/* Campo de Carga de Archivo (NUEVA FUNCIONALIDAD) */}
-        <div className="mb-4 p-4 border rounded-lg bg-white shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Seleccionar y Cargar Archivo 📤
-          </label>
-          <input
-            type="file"
-            onChange={handleFileChange} // Llama a la nueva función
-            className="block w-full text-sm text-gray-900 
-                       file:mr-4 file:py-2 file:px-4
-                       file:rounded-full file:border-0
-                       file:text-sm file:font-semibold
-                       file:bg-blue-100 file:text-blue-700
-                       hover:file:bg-blue-200"
-          />
-          {/* Mostrar el nombre del archivo cargado (NUEVO ESTADO) */}
-          {fileName && (
-            <p className="mt-2 text-sm text-gray-600">
-              Archivo cargado: <span className="font-bold text-blue-800">{fileName}</span>
-            </p>
-          )}
+        {/* ---------------------------------------------------- */}
+        {/* PARTE SUPERIOR (Header Fijo - No cambia de color) */}
+        {/* ---------------------------------------------------- */}
+        <div className="bg-green-700 text-white p-4 rounded-t-xl">
+          <h1 className="text-3xl font-extrabold mb-1 flex items-center">
+            ETH Document Signer <span className="ml-3 text-2xl">✍️</span>
+          </h1>
+          {/* Aquí ubicaremos solo la información fija de la wallet (Wallet Seleccionada) */}
+          <p className="mt-2 text-sm"><strong>Wallet Seleccionada:</strong>**{selectedWallet?.address.slice(0, 4)}...{selectedWallet?.address.slice(-4)}**</p>
+          {/*<p className="mt-2 text-sm"><strong>Wallet Seleccionada:</strong> **{selectedWallet}**</p> ******* LINEA A SER BORRADA ******* */}
         </div>
 
-        {/* Hash que se registrará (AHORA USA documentHash, que será calculado) */}
-        <p className="text-sm font-mono p-2 bg-white rounded-md mb-4 break-words">
-          **Hash a Registrar:** <span className='text-red-600 font-bold'>{documentHash}</span>
-        </p>
+        {/* ---------------------------------------------------- */}
+        {/* CONTENEDOR FLEXIBLE (Tabs y Contenido) */}
+        {/* ---------------------------------------------------- */}
+        {/*<div className="flex">  // ******* LINEA POR ELMINIAR ******* */}
 
-        {/* Botón de Registro (MANTENEMOS SU BOTÓN) */}
-        <button
-          onClick={handleSignAndStore} // Usamos su función de firma
-          disabled={!selectedWallet || isProcessing || documentHash === INITIAL_HASH_DISPLAY} // Usamos documentHash
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50"
-        >
-          {isProcessing ? 'Firmando y Registrando...' : 'Firmar y Registrar ✍️'}
-        </button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr' }} className="bg-white shadow-2xl rounded-xl max-w-6xl mx-auto p-0 border border-gray-200">
 
-        {/* ... Mensajes de éxito y error aquí ... */}
+          {/* 1. BARRA DE NAVEGACIÓN LATERAL (TABS) */}
 
-      </div>
+          {/* <div className="flex flex-col w-1/4 p-0 bg-gray-100 border-r border-gray-200 rounded-bl-xl">  // ******* LINEA A ELIMINAR ******* */}
+          {/*<div className="flex flex-col w-1/4 p-0 bg-gray-100 border-r border-gray-200 rounded-bl-xl">  // ******* LINEA A SER ELIMINADA ******* */}
+          {/*<div className="flex flex-col p-0 bg-gray-100 border-r border-gray-200 rounded-bl-xl">  // ******* LINEA A SER ELIMINADA ******* */}
+          {/*<div style={{ display: 'flex', flexDirection: 'column' }} className="p-0 bg-gray-100 border-r border-gray-200 rounded-bl-xl">  // ******* LINEA A SER ELIMINADA ******* */}
+          <div style={{ display: 'flex', flexDirection: 'column' }} className="p-0 rounded-bl-xl">
 
-      {/* LOG DE MENSAJES */}
-      {logMessage && (
-        <p className={`p-2 mt-2 rounded-md font-medium text-sm break-words 
-            ${logMessage.startsWith('❌') ? 'bg-red-200 text-red-800' :
-            logMessage.startsWith('🎉') ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}
-        >
-          {logMessage}
-        </p>
-      )}
+            {/* Función auxiliar para determinar la clase de color/estilo de la pestaña */}
+            {/* Note: Debe definir la función `getTabClasses` en su código. Ver Paso 4. */}
 
-      {/* ------------------------------------------------------------------- */}
-      {/* SECCIÓN DE CONSULTA DE DOCUMENTO (FASE 4) */}
-      {/* ------------------------------------------------------------------- */}
-      <div className="mt-6 p-4 bg-gray-100 rounded-lg border-gray-300 border">
-        <h2 className="text-xl font-semibold mb-3 text-gray-700">
-          3. Consultar Registro de Documento 🔎
-        </h2>
+            {/* TAB 1: Conexión y Selección */}
 
-        {/* Campo de Carga de Archivo para la Verificación (NUEVA IMPLEMENTACIÓN) */}
-        <div className="mb-4 p-4 border rounded-lg bg-white shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            📤 **Subir Archivo a Verificar** (Inicia consulta automáticamente):
-          </label>
-          <input
-            type="file"
-            onChange={handleVerificationFileChange} // Llama a la nueva función
-            className="block w-full text-sm text-gray-900 
-                       file:mr-4 file:py-2 file:px-4
-                       file:rounded-full file:border-0
-                       file:text-sm file:font-semibold
-                       file:bg-green-100 file:text-green-700
-                       hover:file:bg-green-200"
-          />
-          {/* Muestra el Hash calculado (ya no es un campo editable) */}
-          <p className="mt-2 text-sm font-mono p-2 bg-gray-50 rounded-md break-words border border-gray-200">
-            **Hash a Consultar:** <span className='text-red-600 font-bold'>{hashToConsult}</span>
-          </p>
-        </div>
+            {/*<button                                  // ******* BLOQUE A SER ELIMINADO *******
+              onClick={() => setActiveTab('Wallet')}
+              className={`${getTabClasses('Wallet')} w-full block`}
+            //className={getTabClasses('Wallet')}  // ******* LINEA A SER ELIMINADA *******
+            >
+              1. Conexión y Selección de Wallet
+            </button>*/}
 
-        {/* Campo de entrada para el Hash a consultar */}
-        {/*<div className="mb-4">
-          <label htmlFor="hashQuery" className="block text-sm font-medium text-gray-700 mb-1">
-            Hash a Consultar:
-          </label>
-          {/* REEMPLAZAMOS EL PÁRRAFO FIJO POR EL INPUT CONTROLADO */}
-        {/*<input
-            type="text"
-            id="hashQuery"
-            className="w-full p-2 border rounded-md font-mono text-sm break-words border-gray-300"
-            placeholder="0x..."
-            // ** VINCULACIÓN AL ESTADO hashToConsult **
-            value={hashToConsult}
-            onChange={(e) => setHashToConsult(e.target.value)}
-          />
-        </div>*/}
-
-        {/*<button
-          onClick={handleCheckRegistry} // ¡Ya conectado!
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50"
-          disabled={hashToConsult === INITIAL_HASH_DISPLAY} // Deshabilitar si no hay hash válido
-        >
-          Verificar Registro
-        </button>*/}
-
-        {/* ... (el resto del código de logs y queryResult permanece sin cambios) ... */}
-
-        {queryLogMessage && (
-          <p className={`p-2 mt-2 rounded-md font-medium text-sm break-words 
-    ${queryLogMessage.startsWith('❌') ? 'bg-red-200 text-red-800' :
-              queryLogMessage.startsWith('✅') ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}
-          >
-            {queryLogMessage}
-          </p>
-        )}
-
-        {queryResult && (
-          <div className="mt-4 p-3 bg-white border border-green-400 rounded-md">
-            <p className="font-bold text-green-700 mb-2">✅ Documento Encontrado:</p>
-            <p className="text-sm break-words">
-              **Firmado por:** <span className="font-mono text-gray-800">{queryResult.signer}</span>
-            </p>
-            <p className="text-sm break-words">
-              **Timestamp:** <span className="font-mono text-gray-800">{queryResult.timestamp.toString()}</span>
-            </p>
-            <p className="text-sm break-words mt-1">
-              **Fecha y Hora Timestamp:** <span className="font-mono text-blue-700 font-bold">
-                {formatTimestamp(queryResult.timestamp.toString())}</span>
-            </p>
-            <p className="text-sm break-words">
-              **Firma (parcial):** <span className="font-mono text-gray-800">{queryResult.signature.toString().slice(0, 30)}...</span>
-            </p>
-            <p className="text-xs mt-2 text-gray-500">
-              *(El Timestamp es la marca de tiempo de la Blockchain, no la fecha de hoy)*
-            </p>
-          </div>
-        )}
-
-      </div> {/* CIERRE DE LA SECCIÓN DE CONSULTA */}
-
-      {/* ========== SECCIÓN DE CONSULTA AVANZADA ========== */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-        <h3 className="text-xl font-semibold mb-4 text-yellow-300">🔎 Consulta Avanzada de Documentos</h3>
-        <p className="text-sm text-gray-400 mb-4">
-          Utiliza estas opciones para listar documentos de forma general o filtrada por el firmante.
-        </p>
-
-        <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
-          {/* Opción 1: Búsqueda General */}
-          <button
-            onClick={handleGetAllDocuments}
-            disabled={!documentRegistryContract}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-200 disabled:opacity-50"
-          >
-            Listar Todos los Documentos
-          </button>
-
-          {/* Opción 2: Búsqueda por Wallet (Usando la wallet seleccionada) */}
-          <button
-            onClick={handleGetDocumentsBySigner}
-            disabled={!documentRegistryContract || !selectedWallet}
-            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-200 disabled:opacity-50"
-          >
-            Ver Documentos Firmados por mi Wallet ({selectedWallet?.address.slice(0, 6)}...)
-          </button>
-        </div>
-
-        {/* Mensaje de Log de Consulta Avanzada */}
-        <p className="mt-4 text-sm text-yellow-400 font-mono">{searchLogMessage}</p>
-
-        {/* Tabla de Resultados Detallados */}
-        <div className="mt-6">
-          <h4 className="text-lg font-semibold mb-3 text-gray-300">Resultados ({detailedResults.length})</h4>
-          {detailedResults.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-700 bg-gray-700 rounded-lg">
-                <thead className="bg-gray-900">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Hash (Inicio)</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Firmante</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Fecha de Firma</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {detailedResults.map((doc, index) => (
-                    <tr key={doc.timestamp + index}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-300 font-mono">{doc.hash.slice(0, 10)}...</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{doc.signer.slice(0, 10)}...</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{new Date(Number(doc.timestamp) * 1000).toLocaleString('es-EC')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div
+              onClick={() => setActiveTab('Wallet')}
+              //className={`${getTabClasses('Wallet')} w-full block cursor-pointer`}> 1. Conexión y Selección de Wallet    // ******* LINEA A SER ELIMINADA *******
+              //style={activeTab === 'Wallet' ? { backgroundColor: getTabContentColor('Wallet') } : {}}  // ******* LINEA A SER ELIMINADA *******
+              style={{
+                height: '68px',
+                //lineHeight: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                paddingLeft: '12px',
+                paddingRight: '12px',
+                backgroundColor: activeTab === 'Wallet' ? getTabContentColor('Wallet') : '#c0e5fdff'  // No active button
+              }}
+              //className={`${getTabClasses('Wallet')} w-full block cursor-pointer`}  //  ******* LINEA A SER ELIMINADA *******
+              className={`${getTabClasses('Wallet')} cursor-pointer`}
+            >
+              1. Conexión y Selección de Wallet
             </div>
-          ) : (
-            <p className="text-gray-400">No hay documentos registrados para mostrar, o la búsqueda aún no se ha ejecutado.</p>
-          )}
+
+            {/* TAB 2: Registrar Documento */}
+
+            {/*<button                                  // ******* BLOQUE A SER ELIMINADO *******
+              onClick={() => setActiveTab('Register')}
+              className={`${getTabClasses('Register')} w-full block`}
+            //className={getTabClasses('Register')}  // ******* LINEA A SER ELIMINADA *******
+            >
+              2. Registrar Documento en Blockchain
+            </button>*/}
+
+            <div
+              onClick={() => setActiveTab('Register')}
+              style={{
+                height: '68px',
+                //lineHeight: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                paddingLeft: '12px',
+                paddingRight: '12px',
+                backgroundColor: activeTab === 'Register' ? getTabContentColor('Register') : '#ffe7caff'  // No active button
+              }}
+              //className={`${getTabClasses('Wallet')} w-full block cursor-pointer`}  //  ******* LINEA A SER ELIMINADA *******
+              className={`${getTabClasses('Register')} cursor-pointer`}
+            >
+              2. Registrar Documento en Blockchain
+            </div>
+
+
+            {/* TAB 3: Consultar Registro */}
+
+            {/*<button                                  // ******* BLOQUE A SER ELIMINADO *******
+              onClick={() => setActiveTab('Check')}
+              className={`${getTabClasses('Check')} w-full block`}
+            //className={getTabClasses('Check')}  // ******* LINEA A SER ELIMINADA *******
+            >
+              3. Consultar Registro de Documento
+            </button>*/}
+
+            <div
+              onClick={() => setActiveTab('Check')}
+              style={{
+                height: '68px',
+                //lineHeight: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                paddingLeft: '12px',
+                paddingRight: '12px',
+                backgroundColor: activeTab === 'Check' ? getTabContentColor('Check') : '#c5fdd4ff'  // No active button
+              }}
+              //className={`${getTabClasses('Wallet')} w-full block cursor-pointer`}  //  ******* LINEA A SER ELIMINADA *******
+              className={`${getTabClasses('Check')} cursor-pointer`}
+            >
+              2. Registrar Documento en Blockchain
+            </div>
+
+            {/* TAB 4: Consulta Avanzada */}
+
+            {/*<button                                  // ******* BLOQUE A SER ELIMINADO *******
+              onClick={() => setActiveTab('Advanced')}
+              className={`${getTabClasses('Advanced')} w-full block`}
+            //className={getTabClasses('Advanced')}  // ******* LINEA A SER ELIMINADA *******
+            // Dado que la sección 4 ya era Consulta Avanzada, le pondremos este nombre
+            >
+              4. Consulta Avanzada de Documentos
+            </button>*/}
+
+            <div
+              onClick={() => setActiveTab('Advanced')}
+              style={{
+                height: '68px',
+                //lineHeight: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                paddingLeft: '12px',
+                paddingRight: '12px',
+                backgroundColor: activeTab === 'Advanced' ? getTabContentColor('Advanced') : '#e1c6feff'  // No active button
+              }}
+              //className={`${getTabClasses('Wallet')} w-full block cursor-pointer`}  //  ******* LINEA A SER ELIMINADA *******
+              className={`${getTabClasses('Advanced')} cursor-pointer`}
+            >
+              4. Consulta Avanzada de Documentos
+            </div>
+
+          </div>
+
+          {/* 2. CONTENIDO PRINCIPAL (CAMBIA SEGÚN EL TAB ACTIVO) */}
+          {/*<div className="w-3/4 p-6" style={{ backgroundColor: getTabContentColor(activeTab) }}>  // ******* LINEA A SER ELIMINADA ******* */}
+          <div className="p-6" style={{ backgroundColor: getTabContentColor(activeTab), paddingLeft: '12px' }}>
+            {activeTab === 'Wallet' && (
+              <div className="p-4 bg-white rounded-lg border">
+                {/* Aquí va el código de Selección de Wallets (#0 a #9) */}
+                <h2 className="text-xl font-semibold mb-3 text-gray-700">1. Selección y Conexión con Wallet 💼</h2>
+                {/* Coloque el mapeo (map) de `anvilWallets` aquí */}
+                {/* (código de Sección 1) */}
+                {/* SECCIÓN PARA ESCOGER WALLET Y CONECTAR */}
+                <div className="p-4 bg-gray-50 rounded-lg mb-6">
+
+                  {/*<h2 className="text-xl font-semibold mb-3 text-gray-700">  // ******* SECCION A BORRAR *******
+                    1. Conexión y Selección de Wallet
+                  </h2>*/}
+
+                  {/* Mensajes de Estado de Conexión */}
+                  {error && <p className="text-red-600 font-medium mb-2">🔴 ERROR: {error}</p>}
+
+                  {selectedWallet ? (
+                    <p className="text-green-600 font-medium break-words">
+                      ✅ Wallet Seleccionada: **{selectedWallet.address}**
+                    </p>
+                  ) : isConnected ? (
+                    <p className="text-yellow-600 font-medium">
+                      🟡 Conectado a Anvil. Por favor, selecciona una wallet.
+                    </p>
+                  ) : (
+                    <p className="text-red-500 font-medium">
+                      ⚠️ Desconectado. ¿Está Anvil corriendo?
+                    </p>
+                  )}
+
+                  {isConnected && wallets.length > 0 && renderWalletSelector()}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'Register' && (
+              <div className="p-4 bg-white rounded-lg border">
+                <h2 className="text-xl font-semibold mb-3 text-gray-700">2. Registrar Documento en Blockchain ⛓</h2>
+                {/* Aquí va el código de la Sección 2 (Registrar Documento) */}
+                {/* SECCIÓN DE REGISTRO DE DOCUMENTO */}
+                <div className="p-4 bg-blue-50 rounded-lg border-blue-200 border">
+
+                  {/*<h2 className="text-xl font-semibold mb-3 text-blue-700">    // ******* SECCION A BORRAR *******
+                    2. Registrar Documento en Blockchain
+                  </h2>*/}
+
+                  {/* Campo de Carga de Archivo (NUEVA FUNCIONALIDAD) */}
+                  <div className="mb-4 p-4 border rounded-lg bg-white shadow-sm">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Seleccionar y Cargar Archivo 📤
+                    </label>
+                    <input
+                      type="file"
+                      onChange={handleFileChange} // Llama a la nueva función
+                      className="block w-full text-sm text-gray-900 
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-blue-100 file:text-blue-700
+                            hover:file:bg-blue-200"/>
+                    {/* Mostrar el nombre del archivo cargado (NUEVO ESTADO) */}
+                    {fileName && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        Archivo cargado: <span className="font-bold text-blue-800">{fileName}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Hash que se registrará (AHORA USA documentHash, que será calculado) */}
+                  <p className="text-sm font-mono p-2 bg-white rounded-md mb-4 break-words">
+                    **Hash a Registrar:** <span className='text-red-600 font-bold'>{documentHash}</span>
+                  </p>
+
+                  {/* Botón de Registro (MANTENEMOS SU BOTÓN) */}
+                  <button
+                    onClick={handleSignAndStore} // Usamos su función de firma
+                    disabled={!selectedWallet || isProcessing || documentHash === INITIAL_HASH_DISPLAY} // Usamos documentHash
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50">
+                    {isProcessing ? 'Firmando y Registrando...' : 'Firmar y Registrar ✍️'}
+                  </button>
+
+                  {/* ... Mensajes de éxito y error aquí ... */}
+
+                </div>
+
+                {/* LOG DE MENSAJES */}
+                {logMessage && (
+                  <p className={`p-2 mt-2 rounded-md font-medium text-sm break-words 
+                      ${logMessage.startsWith('❌') ? 'bg-red-200 text-red-800' :
+                      logMessage.startsWith('🎉') ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>
+                    {logMessage}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'Check' && (
+              <div className="p-4 bg-white rounded-lg border">
+                <h2 className="text-xl font-semibold mb-3 text-gray-700">3. Consultar Registro de Documento 🔎</h2>
+                {/* Aquí va el código de la Sección 3 (Consultar Registro) */}
+                {/* ------------------------------------------------------------------- */}
+                {/* SECCIÓN DE CONSULTA DE DOCUMENTO (FASE 4) */}
+                {/* ------------------------------------------------------------------- */}
+                <div className="mt-6 p-4 bg-gray-100 rounded-lg border-gray-300 border">
+
+                  {/*<h2 className="text-xl font-semibold mb-3 text-gray-700">    // ******* SECCION A BORRAR *******
+                    3. Consultar Registro de Documento 🔎
+                  </h2>*/}
+
+                  {/* Campo de Carga de Archivo para la Verificación (NUEVA IMPLEMENTACIÓN) */}
+                  <div className="mb-4 p-4 border rounded-lg bg-white shadow-sm">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📤 **Subir Archivo a Verificar**:
+                    </label>
+                    <input
+                      type="file"
+                      onChange={handleVerificationFileChange} // Llama a la nueva función
+                      className="block w-full text-sm text-gray-900 
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-full file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-green-100 file:text-green-700
+                      hover:file:bg-green-200"
+                    />
+                    {/* Muestra el Hash calculado (ya no es un campo editable) */}
+                    <p className="mt-2 text-sm font-mono p-2 bg-gray-50 rounded-md break-words border border-gray-200">
+                      **Hash a Consultar:** <span className='text-red-600 font-bold'>{hashToConsult}</span>
+                    </p>
+                  </div>
+
+
+
+                  {queryLogMessage && (
+                    <p className={`p-2 mt-2 rounded-md font-medium text-sm break-words 
+              ${queryLogMessage.startsWith('❌') ? 'bg-red-200 text-red-800' :
+                        queryLogMessage.startsWith('✅') ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>
+                      {queryLogMessage}
+                    </p>
+                  )}
+
+                  {queryResult && (
+                    <div className="mt-4 p-3 bg-white border border-green-400 rounded-md">
+                      <p className="font-bold text-green-700 mb-2">✅ Documento Encontrado:</p>
+                      <p className="text-sm break-words">
+                        **Firmado por:** <span className="font-mono text-gray-800">{queryResult.signer}</span>
+                      </p>
+                      <p className="text-sm break-words">
+                        **Timestamp:** <span className="font-mono text-gray-800">{queryResult.timestamp.toString()}</span>
+                      </p>
+                      <p className="text-sm break-words mt-1">
+                        **Fecha y Hora Timestamp:** <span className="font-mono text-blue-700 font-bold">
+                          {formatTimestamp(queryResult.timestamp.toString())}</span>
+                      </p>
+                      <p className="text-sm break-words">
+                        **Firma (parcial):** <span className="font-mono text-gray-800">{queryResult.signature.toString().slice(0, 30)}...</span>
+                      </p>
+                      <p className="text-xs mt-2 text-gray-500">
+                        *(El Timestamp es la marca de tiempo de la Blockchain, no la fecha de hoy)*
+                      </p>
+                    </div>
+                  )}
+
+                </div> {/* CIERRE DE LA SECCIÓN DE CONSULTA */}
+              </div>
+            )}
+
+            {activeTab === 'Advanced' && (
+              <div className="p-4 bg-white rounded-lg border">
+                <h2 className="text-xl font-semibold mb-3 text-gray-700">4. Consulta Avanzada de Documentos 🔎</h2>
+                {/* Aquí va el código de la Consulta Avanzada y Resultados */}
+                {/* ========== SECCIÓN DE CONSULTA AVANZADA ========== */}
+                <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+
+                  {/*<h3 className="text-xl font-semibold mb-4 text-yellow-300">4. Consulta Avanzada de Documentos 🔎</h3>    // ******* SECCION A BORRAR ******* */}
+                  <p className="text-sm text-gray-400 mb-4">
+                    Utiliza estas opciones para listar documentos de forma general o filtrada por el firmante.
+                  </p>
+
+                  <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+                    {/* Opción 1: Búsqueda General */}
+                    <button
+                      onClick={handleGetAllDocuments}
+                      disabled={!documentRegistryContract}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-200 disabled:opacity-50"
+                    >
+                      Listar Todos los Documentos
+                    </button>
+
+                    {/* Opción 2: Búsqueda por Wallet (Usando la wallet seleccionada) */}
+                    <button
+                      onClick={handleGetDocumentsBySigner}
+                      disabled={!documentRegistryContract || !selectedWallet}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition duration-200 disabled:opacity-50"
+                    >
+                      Ver Documentos Firmados por mi Wallet ({selectedWallet?.address.slice(0, 6)}...)
+                    </button>
+                  </div>
+
+                  {/* Mensaje de Log de Consulta Avanzada */}
+                  <p className="mt-4 text-sm text-yellow-400 font-mono">{searchLogMessage}</p>
+
+                  {/* Tabla de Resultados Detallados */}
+                  <div className="mt-6">
+                    <h4 className="text-lg font-semibold mb-3 text-gray-300">Resultados ({detailedResults.length})</h4>
+                    {detailedResults.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-700 bg-gray-700 rounded-lg">
+                          <thead className="bg-gray-900">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Hash (Inicio)</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Firmante</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Fecha de Firma</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-700">
+                            {detailedResults.map((doc, index) => (
+                              <tr key={doc.timestamp + index}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-300 font-mono">{doc.hash.slice(0, 10)}...</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{doc.signer.slice(0, 10)}...</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{new Date(Number(doc.timestamp) * 1000).toLocaleString('es-EC')}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-gray-400">No hay documentos registrados para mostrar, o la búsqueda aún no se ha ejecutado.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
-      </div>
+
+      </div >
 
     </main >
   );

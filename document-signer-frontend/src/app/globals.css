@@ -40,3 +40,11 @@ a {
     color-scheme: dark;
   }
 }
+
+.grid {
+  display: grid !important;
+}
+
+.flex {
+  display: flex !important;
+}
